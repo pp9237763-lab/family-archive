@@ -1,21 +1,18 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Семейный архив Голышевых</title>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="style.css">
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
 <body>
-    <div class="container">
-        <div id="login">
-            <h1>📖 Семейный архив Голышевых</h1>
-            <input type="password" id="password" placeholder="Введите пароль">
-            <button onclick="checkPassword()">Войти в архив</button>
-            <p id="error" class="hidden">❌ Неверный пароль</p>
-        </div>
-        <div id="content" class="hidden"></div>
-    </div>
-    <script src="script.js"></script>
+    <div id="root"></div>
+    <!-- Подключаем базу знаний -->
+    <script src="world.js"></script>
+    <script type="text/babel" src="app.js"></script>
 </body>
 </html>
