@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<widget xmlns="http://www.w3.org/ns/widgets" 
+        id="com.familyarchive.golyshev" 
+        version="1.0.0">
+    <name>Семейный архив Голышевых</name>
+    <description>Приложение семейного архива</description>
+    <author>Ваше имя</author>
+    <content src="index.html" />
+    <access origin="*" />
+    <platform name="android">
+        <allow-intent href="market:*" />
+    </platform>
+</widget>
