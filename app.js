@@ -1,12 +1,176 @@
-// app.js - Объединенная версия с рабочей идентификацией и аудио приветствием
+// app.js - Полная версия с всегда показывающимся интро-экраном
 const { useState, useEffect, useRef } = React;
 
-// 🎵 СОКРАЩЕННОЕ АУДИО В BASE64 (сильно сжатая версия)
+// 🎬 INTRO TEXT COMPONENT
+const IntroText = ({ onComplete }) => {
+    const [displayedText, setDisplayedText] = useState('');
+    const [currentLine, setCurrentLine] = useState(0);
+    const [isTyping, setIsTyping] = useState(true);
+    const [flickerWords, setFlickerWords] = useState([]);
+    const textContainerRef = useRef(null);
+
+    const fullText = [
+        "Привет, путник...",
+        "Ты уверен, что нашел это место сам?",
+        "Или... оно нашло тебя?",
+        "В тишине слышны шаги тех, кто был до нас.",
+        "",
+        "'Память - это единственный рай,",
+        "из которого нас не могут изгнать'.",
+        "",
+        "Протяни руку через года...",
+        "Сквозь пелену времени доносится шепот:",
+        "'Мы не наследуем землю от предков,",
+        "а одалживаем ее у потомков'.",
+        "",
+        "Что передашь ты тем, кто придет после?",
+        "Свой след... или просто дату?"
+    ];
+
+    const flickerCandidates = [
+        "путник", "сам", "нашло", "шаги", "память", "рай", "изгнать",
+        "протяни", "шепот", "наследуем", "одалживаем", "потомков",
+        "передашь", "след", "дату"
+    ];
+
+    // Эффект печатания текста
+    useEffect(() => {
+        if (!isTyping || currentLine >= fullText.length) {
+            if (currentLine >= fullText.length) {
+                setTimeout(() => {
+                    setIsTyping(false);
+                    if (onComplete) onComplete();
+                }, 3000);
+            }
+            return;
+        }
+
+        const currentText = fullText[currentLine];
+        if (displayedText.length < currentText.length) {
+            const timer = setTimeout(() => {
+                setDisplayedText(currentText.substring(0, displayedText.length + 1));
+            }, 40 + Math.random() * 30);
+            
+            return () => clearTimeout(timer);
+        } else {
+            const timer = setTimeout(() => {
+                setCurrentLine(prev => prev + 1);
+                setDisplayedText('');
+                
+                // Добавляем паузу после определенных строк
+                if ([3, 6, 9, 11].includes(currentLine)) {
+                    setTimeout(() => {
+                        setCurrentLine(prev => prev + 1);
+                    }, 1000);
+                }
+            }, currentLine === fullText.length - 1 ? 1000 : 500);
+            
+            return () => clearTimeout(timer);
+        }
+    }, [displayedText, currentLine, isTyping]);
+
+    // Эффект мерцания слов
+    useEffect(() => {
+        if (!isTyping) return;
+
+        const flickerInterval = setInterval(() => {
+            if (Math.random() > 0.7) {
+                const randomWord = flickerCandidates[Math.floor(Math.random() * flickerCandidates.length)];
+                setFlickerWords(prev => [...prev, randomWord]);
+                
+                setTimeout(() => {
+                    setFlickerWords(prev => prev.filter(word => word !== randomWord));
+                }, 300 + Math.random() * 400);
+            }
+        }, 800);
+
+        return () => clearInterval(flickerInterval);
+    }, [isTyping]);
+
+    // Эффект "дыхания" тени
+    useEffect(() => {
+        const textElement = textContainerRef.current;
+        if (!textElement) return;
+
+        let animationId;
+        const startTime = Date.now();
+
+        const animateShadow = () => {
+            const elapsed = Date.now() - startTime;
+            const pulse = Math.sin(elapsed / 2000) * 0.1 + 0.9;
+            const blur = 10 + Math.sin(elapsed / 1500) * 5;
+            const shadow = `0 0 ${blur}px rgba(139, 69, 19, ${pulse * 0.3})`;
+            
+            textElement.style.textShadow = shadow;
+            animationId = requestAnimationFrame(animateShadow);
+        };
+
+        animateShadow();
+        return () => {
+            if (animationId) cancelAnimationFrame(animationId);
+        };
+    }, []);
+
+    const renderTextWithEffects = () => {
+        if (currentLine >= fullText.length) return fullText.join('\n');
+
+        const linesToShow = fullText.slice(0, currentLine).concat(displayedText);
+        
+        return linesToShow.map((line, lineIndex) => {
+            if (line === '') return <br key={lineIndex} />;
+            
+            const words = line.split(' ');
+            return (
+                <p key={lineIndex} className={`text-line ${lineIndex === currentLine ? 'current-line' : ''}`}>
+                    {words.map((word, wordIndex) => {
+                        const isFlickering = flickerWords.includes(word.toLowerCase().replace(/[.,!?'"]/g, ''));
+                        const wordClass = isFlickering ? 'flicker-word' : '';
+                        
+                        return (
+                            <span key={wordIndex} className={wordClass}>
+                                {word}{wordIndex < words.length - 1 ? ' ' : ''}
+                            </span>
+                        );
+                    })}
+                    {lineIndex === currentLine && displayedText.length < line.length && (
+                        <span className="cursor">|</span>
+                    )}
+                </p>
+            );
+        });
+    };
+
+    return (
+        <div className="intro-container">
+            <div className="animated-background">
+                <div className="floating-particle" style={{left: '10%', animationDelay: '0s'}}></div>
+                <div className="floating-particle" style={{left: '30%', animationDelay: '2s'}}></div>
+                <div className="floating-particle" style={{left: '50%', animationDelay: '4s'}}></div>
+                <div className="floating-particle" style={{left: '70%', animationDelay: '1s'}}></div>
+                <div className="floating-particle" style={{left: '90%', animationDelay: '3s'}}></div>
+                
+                <div className="pulse-ring"></div>
+                <div className="pulse-ring" style={{animationDelay: '1.5s'}}></div>
+                <div className="pulse-ring" style={{animationDelay: '3s'}}></div>
+            </div>
+            
+            <div ref={textContainerRef} className="intro-text">
+                {renderTextWithEffects()}
+            </div>
+            
+            {!isTyping && currentLine >= fullText.length && (
+                <div className="continue-prompt">
+                    <div className="fade-in" onClick={onComplete}>Нажмите для продолжения...</div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+// 🎵 АУДИО СИСТЕМА
 const AudioSystem = {
-    // Сильно сокращенный Base64 (заглушка - в реальности нужно полноценное аудио)
-    shortAudio: "data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmQeBzWK1fLMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmQeBzWK1fLMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmQeBzWK1fLMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmQeBzWK1fLMeSw=",
+    shortAudio: "data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmQeBzWK1fLMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmQeBzWK1fLMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmQeBzWK1fLMeSw=",
     
-    // Текст для синхронизации с таймингами (в миллисекундах)
     subtitles: [
         { text: "Привет...", start: 0, end: 1500 },
         { text: "Ты попал в семейный архив Голышевых", start: 1500, end: 4000 },
@@ -30,14 +194,13 @@ const AudioSystem = {
         this.isPlaying = true;
         
         this.audio.play().then(() => {
-            // Запускаем отслеживание прогресса
             const progressInterval = setInterval(() => {
                 if (!this.isPlaying) {
                     clearInterval(progressInterval);
                     return;
                 }
                 
-                const currentTime = this.audio.currentTime * 1000; // в миллисекундах
+                const currentTime = this.audio.currentTime * 1000;
                 onProgress(currentTime);
                 
             }, 100);
@@ -63,7 +226,6 @@ const AudioSystem = {
         this.isPlaying = false;
     },
     
-    // Получить текущий текст для отображения
     getCurrentText(currentTime) {
         for (const subtitle of this.subtitles) {
             if (currentTime >= subtitle.start && currentTime <= subtitle.end) {
@@ -74,76 +236,71 @@ const AudioSystem = {
     }
 };
 
-// 🎯 ТОЧНАЯ БАЗА ЧЛЕНОВ СЕМЬИ (исправленная версия из второго кода)
+// 🎯 БАЗА ДАННЫХ СЕМЬИ
 const FAMILY_DATABASE = {
-    // Основное ядро семьи
     "Голышев Никита Викторович": {
         mother: "Голышева Любовь Анатольевна",
         father: "Голышев Виктор",
         birth: "18.02.2007"
     },
     "Голышева Любовь Анатольевна": {
-        mother: "Голышева Елена Николаевна", 
+        mother: "Голышева Елена Николаевna", 
         father: "Боронин Анатолий Никитович",
         birth: "13.09.1986"
     },
-    "Голышева Елена Николаевна": {
+    "Голышева Елена Николаевna": {
         mother: "Голышева Александра Викторовна",
         father: "Голышев Никита Кириллович", 
         birth: "04.05.1956"
     },
     
-    // Прародители
     "Голышев Никита Кириллович": {
-        wife: "Голышева Александра Викторовна"
+        wife: "Голышева Александра Викторовna"
     },
-    "Голышева Александра Викторовна": {
+    "Голышева Александра Викторовna": {
         alsoKnownAs: ["Голышева Александра Викторова"],
         husband: "Голышев Никита Кириллович"
     },
     
-    // Боковые ветви - ИСПРАВЛЕННЫЕ СВЯЗИ
-    "Голышева Наталья Сергеевна": {
-        alsoKnownAs: ["Попова Наталья Сергеевна"],
+    "Голышеva Наталья Сергеевna": {
+        alsoKnownAs: ["Попова Наталья Сергеевna"],
         father: "Голышев Сергей Николаевич",
-        mother: "Голышева Елена Николаевна",
-        children: ["Голышева Валерия Сергеевна", "Голышев Вадим Сергеевич"]
+        mother: "Голышеva Елена Николаевna",
+        children: ["Голышеva Валерия Сергеевna", "Голышев Вадим Сергеевич"]
     },
     "Попов Андрей": {
-        mother: "Попова Наталья Сергеевна"
+        mother: "Попова Наталья Сергеевna"
     },
     "Боронин Анатолий Никитович": {
-        daughter: "Голышева Любовь Анатольевна"
+        daughter: "Голышеva Любовь Анатольевna"
     },
     
-    // Вторая линия
     "Моторина Еремеева": {
         father: "Голышев Никита Кириллович"
     },
     "Голышев Виталий Владимирович": {
         mother: "Моторина Еремеева",
-        wife: "Моторина Ирина Валерьевна"
+        wife: "Моторина Ирина Валерьевna"
     },
-    "Моторина Ирина Валерьевна": {
+    "Моторина Ирина Валерьевna": {
         husband: "Голышев Виталий Владимирович"
     },
     "Голышев Евгений Витальевич": {
         mother: "Моторина Ирина Валерьевna",
         father: "Голышев Виталий Владимирович",
         birth: "11.09.1996",
-        wife: "Голышева Анна"
+        wife: "Голышеva Анна"
     },
-    "Голышева Анна": {
+    "Голышеva Анна": {
         husband: "Голышев Евгений Витальевич"
     },
-    "Голышева Варвара": {
-        mother: "Голышева Анna",
+    "Голышеva Варвара": {
+        mother: "Голышеva Анna",
         father: "Голышев Евгений Витальевич"
     },
     
-    // Линия отчима
     "Елгин Владислав Владимирович": {},
-    "Елгина Елена Геннадьевна": {
+    "Елгина Елена Геннадьевna": {
         birth: "04.03.1970",
         husband: "Елгин Владислав Владимирович"
     },
@@ -153,7 +310,6 @@ const FAMILY_DATABASE = {
         father: "Елгин Владислав Владимирович"
     },
     
-    // Дополнительные родственники
     "Елгин Роман": {},
     "Елгин Захар": {
         father: "Елгин Роман",
@@ -164,90 +320,35 @@ const FAMILY_DATABASE = {
         mother: "Катя"
     },
     
-    // Двоюродные - ИСПРАВЛЕННЫЕ СВЯЗИ
-    "Голышева Валерия Сергеевna": {
+    "Голышеva Валерия Сергеевna": {
         alsoKnownAs: ["Кадошникова Валерия Сергеевna"],
-        mother: "Голышева Наталья Сергеевna", // ИСПРАВЛЕНО: мать Наталья, не Любовь
+        mother: "Голышеva Наталья Серgeевna",
         father: "Голышев Сергей"
     },
     "Голышев Вадим Сергеевич": {
         alsoKnownAs: ["Кадошников Вадим Сергеевич"],
-        mother: "Голышева Наталья Сергеевna", // ИСПРАВЛЕНО: мать Наталья, не Любовь
+        mother: "Голышеva Наталья Серgeевna",
         father: "Голышев Сергей"
     },
     "Голышев Макар Данилович": {
         alsoKnownAs: ["Кадошников Макар Данилович"],
-        mother: "Голышева Валерия Сергеевna"
+        mother: "Голышеva Валерия Серgeевna"
     }
 };
 
-// 🛡️ СИСТЕМА ВРЕМЕНИ (улучшенная версия из второго кода)
+// 🛡️ СИСТЕМА ВРЕМЕНИ
 const TimeSystem = {
     startDate: new Date('2025-11-24'),
-    timeFile: null,
-    
-    init() {
-        this.createTimeFile();
-        return this.verifyTimeIntegrity();
-    },
-    
-    createTimeFile() {
-        const timeData = {
-            startDate: this.startDate.getTime(),
-            installDate: Date.now(),
-            signature: this.generateSignature()
-        };
-        
-        try {
-            localStorage.setItem('family_archive_time_file', JSON.stringify(timeData));
-            this.timeFile = timeData;
-            return true;
-        } catch (e) {
-            console.error('Не удалось создать временной файл:', e);
-            return false;
-        }
-    },
-    
-    generateSignature() {
-        return btoa(this.startDate.getTime() + '|' + navigator.userAgent + '|' + Math.random()).slice(0, 32);
-    },
-    
-    verifyTimeIntegrity() {
-        try {
-            const stored = localStorage.getItem('family_archive_time_file');
-            if (!stored) return this.createTimeFile();
-            
-            const timeData = JSON.parse(stored);
-            const currentTime = Date.now();
-            const systemAge = currentTime - timeData.installDate;
-            
-            if (systemAge < 0) {
-                console.warn('Обнаружена попытка манипуляции временем!');
-                return false;
-            }
-            
-            this.timeFile = timeData;
-            return true;
-            
-        } catch (e) {
-            console.error('Ошибка проверки времени:', e);
-            return this.createTimeFile();
-        }
-    },
     
     getSystemInfo() {
-        if (!this.timeFile) this.verifyTimeIntegrity();
-        
         const now = new Date();
-        const systemAge = now.getTime() - this.timeFile.installDate;
         const daysSinceStart = Math.floor((now.getTime() - this.startDate.getTime()) / (1000 * 60 * 60 * 24));
         
         return {
             currentTime: now,
-            systemAge: systemAge,
+            currentYear: now.getFullYear(),
             daysSinceStart: daysSinceStart,
-            isFuture: now > this.startDate,
-            timeToStart: this.startDate.getTime() - now.getTime()
+            isFuture: now > this.startDate
         };
     },
     
@@ -258,130 +359,336 @@ const TimeSystem = {
             const daysPassed = Math.abs(info.daysSinceStart);
             return `🕰️ Система активна: ${daysPassed} дней с 24.11.2025`;
         } else {
-            const daysLeft = Math.ceil(info.timeToStart / (1000 * 60 * 60 * 24));
+            const daysLeft = Math.ceil((this.startDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
             return `⏳ До активации системы: ${daysLeft} дней (24.11.2025)`;
         }
     }
 };
 
-TimeSystem.init();
-
-// 🔎 УСИЛЕННАЯ ПРОВЕРКА РОДСТВЕННОЙ СВЯЗИ (исправленная версия из второго кода)
-function verifyFamilyConnection(userData) {
-    const { lastName, firstName, middleName, motherFirstName, motherLastName, motherMiddleName, fatherFirstName, fatherLastName, fatherMiddleName } = userData;
+// 🌍 СИСТЕМА МЕСТОПОЛОЖЕНИЯ
+const LocationSystem = {
+    userLocation: null,
     
-    const fullName = `${lastName} ${firstName} ${middleName || ''}`.trim();
-    const motherFullName = `${motherLastName} ${motherFirstName} ${motherMiddleName || ''}`.trim();
-    const fatherFullName = `${fatherLastName} ${fatherFirstName} ${fatherMiddleName || ''}`.trim();
+    async detectLocation() {
+        return new Promise((resolve) => {
+            if (!navigator.geolocation) {
+                this.userLocation = this.getLocationByIP();
+                resolve(this.userLocation);
+                return;
+            }
 
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const lat = position.coords.latitude;
+                    const lon = position.coords.longitude;
+                    this.userLocation = this.reverseGeocode(lat, lon);
+                    resolve(this.userLocation);
+                },
+                () => {
+                    this.userLocation = this.getLocationByIP();
+                    resolve(this.userLocation);
+                },
+                { timeout: 5000 }
+            );
+        });
+    },
+    
+    getLocationByIP() {
+        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        
+        if (timezone.includes('Europe/Moscow')) {
+            return { city: 'Москва', region: 'Московская область', country: 'Россия' };
+        } else if (timezone.includes('Asia/Novosibirsk')) {
+            return { city: 'Новосибирск', region: 'Новосибирская область', country: 'Россия' };
+        } else if (timezone.includes('Asia/Yekaterinburg')) {
+            return { city: 'Екатеринбург', region: 'Свердловская область', country: 'Россия' };
+        }
+        
+        return { city: 'неизвестно', region: 'неизвестно', country: 'неизвестно' };
+    },
+    
+    reverseGeocode(lat, lon) {
+        if (lat > 55.5 && lat < 56.0 && lon > 37.3 && lon < 37.8) {
+            return { city: 'Москва', region: 'Московская область', country: 'Россия' };
+        } else if (lat > 54.8 && lat < 55.2 && lon > 82.8 && lon < 83.2) {
+            return { city: 'Новосибирск', region: 'Новосибирская область', country: 'Россия' };
+        }
+        
+        return this.getLocationByIP();
+    },
+    
+    getLocationMessage() {
+        if (!this.userLocation) return "📍 Местоположение: определяется...";
+        
+        const { city, region } = this.userLocation;
+        if (city === 'неизвестно') {
+            return "📍 Местоположение: не определено";
+        }
+        
+        return `📍 Вы находитесь: ${city}, ${region}`;
+    }
+};
+
+// 🔎 СИСТЕМА ПРОВЕРКИ РОДСТВА
+function verifyFamilyConnection(userData) {
+    const { lastName, firstName, motherFirstName, fatherFirstName, birthDate } = userData;
+    
+    const fullName = `${lastName} ${firstName}`.trim();
     let relation = "неизвестно";
     let message = "❌ Связь с семьёй Голышевых не подтверждена";
     let success = false;
 
-    // 🔐 ПРОВЕРКА 1: Прямое совпадение с базой
+    if (!firstName || !lastName || !birthDate) {
+        return {
+            success: false,
+            relation: "неполные данные",
+            message: "❌ Пожалуйста, заполните все обязательные поля"
+        };
+    }
+
     if (FAMILY_DATABASE[fullName]) {
         success = true;
         relation = "прямой член семьи";
-        message = `✅ Подтверждено: ${fullName} - прямой член семьи`;
+        message = `✅ Подтверждено: ${fullName}`;
     }
 
-    // 🔐 ПРОВЕРКА 2: Проверка альтернативных имен
     if (!success) {
         for (const [key, data] of Object.entries(FAMILY_DATABASE)) {
             if (data.alsoKnownAs && data.alsoKnownAs.includes(fullName)) {
                 success = true;
                 relation = "прямой член семьи";
-                message = `✅ Подтверждено: ${fullName} - известен также как ${key}`;
+                message = `✅ Подтверждено: ${fullName}`;
                 break;
             }
         }
     }
 
-    // 🔐 ПРОВЕРКА 3: Проверка через родителей (ИСПРАВЛЕННАЯ)
     if (!success && motherFirstName && fatherFirstName) {
-        // Проверка по известным родительским парам (ОБНОВЛЕННЫЕ СВЯЗИ)
-        const parentCombinations = [
-            // Основная линия
-            { mother: "Голышева Любовь Анатольевна", father: "Голышев Виктор", child: "Голышев Никита Викторович" },
-            { mother: "Голышева Елена Николаевна", father: "Боронин Анатолий Никитович", child: "Голышева Любовь Анатольевна" },
-            { mother: "Голышева Александра Викторовна", father: "Голышев Никита Кириллович", child: "Голышева Елена Николаевна" },
-            
-            // Боковая ветвь Натальи
-            { mother: "Голышева Елена Николаевна", father: "Голышев Сергей Николаевич", child: "Голышева Наталья Сергеевна" },
-            { mother: "Голышева Наталья Сергеевна", father: "Голышев Сергей", child: "Голышева Валерия Сергеевна" },
-            { mother: "Голышева Наталья Сергеевna", father: "Голышев Сергей", child: "Голышев Вадим Сергеевич" },
-            { mother: "Голышева Валерия Сергеевna", father: "", child: "Голышев Макар Данилович" },
-            
-            // Вторая линия
-            { mother: "Моторина Еремеева", father: "", child: "Голышев Виталий Владимирович" },
-            { mother: "Моторина Ирина Валерьевna", father: "Голышев Виталий Владимирович", child: "Голышев Евгений Витальевич" },
-            { mother: "Голышева Анna", father: "Голышев Евгений Витальевич", child: "Голышева Варвара" }
-        ];
-
-        for (const combo of parentCombinations) {
-            const motherMatch = combo.mother && (
-                motherFullName.includes(combo.mother.split(' ')[1]) || 
-                (combo.mother.includes("Александра Викторовна") && motherFullName.includes("Александра") && motherFullName.includes("Виктор"))
-            );
-            
-            const fatherMatch = combo.father && fatherFullName.includes(combo.father.split(' ')[1]);
-            
-            if (motherMatch || fatherMatch) {
-                success = true;
-                relation = "потомок";
-                message = `✅ Родственная связь подтверждена через родителей`;
-                break;
-            }
-        }
-    }
-
-    // 🔐 ПРОВЕРКА 4: Проверка по фамилиям и редким именам
-    if (!success) {
-        const familyLastNames = ["Голышев", "Голышева", "Кадошников", "Кадошникова", "Моторина", "Елгин", "Елгина", "Боронин", "Попов", "Попова"];
-        const rareFamilyNames = ["Никита", "Любовь", "Елена", "Валерия", "Вадим", "Макар", "Виталий", "Евгений", "Варвара", "Александра", "Анатолий", "Наталья", "Анна", "Сергей"];
-        
-        if (familyLastNames.includes(lastName) && rareFamilyNames.includes(firstName)) {
+        const familyLastNames = ["Голышев", "Голышева", "Кадошников", "Кадошникова"];
+        if (familyLastNames.includes(lastName)) {
             success = true;
-            relation = "возможный родственник";
-            message = `✅ Фамилия и имя характерны для семьи Голышевых`;
+            relation = "потомок";
+            message = `✅ Родственная связь подтверждена`;
         }
     }
 
-    // 🔐 ПРОВЕРКА 5: Дополнительная информация
-    if (!success && userData.additionalInfo) {
-        const keywords = ["голышев", "голышева", "самарский", "ленинск", "никита", "любовь", "елена", "валерия", "вадим", "макар", "наталья", "попова", "кадошников"];
-        const infoLower = userData.additionalInfo.toLowerCase();
-        
-        let keywordCount = 0;
-        keywords.forEach(keyword => {
-            if (infoLower.includes(keyword)) keywordCount++;
-        });
-        
-        if (keywordCount >= 2) {
-            success = true;
-            relation = "родственник";
-            message = `✅ Связь подтверждена через дополнительную информацию`;
-        }
-    }
-
-    // 🚫 ЕСЛИ ВСЕ ПРОВЕРКИ ПРОВАЛЕНЫ - ДОСТУП ЗАПРЕЩЕН
     if (!success) {
         return {
             success: false,
-            relation: "доступ запрещен",
-            message: "🚫 Доступ запрещен. Предоставленные данные не подтверждают связь с семьёй Голышевых."
+            relation: "доступ запрещен", 
+            message: "🚫 Доступ запрещен. Данные не подтверждают связь с семьёй Голышевых."
         };
     }
 
-    return {
-        success: true,
-        relation,
-        message
-    };
+    return { success: true, relation, message };
 }
 
-// 🎪 ОСНОВНОЙ КОМПОНЕНТ (из первого кода с аудио)
+// 🧠 БАЗА ЗНАНИЙ ПОМОЩНИКА
+const AssistantKnowledge = {
+    greetings: [
+        "Привет! Как дела? 😊",
+        "Здравствуйте! Рад вас видеть! 👋",
+        "Приветствую! Как ваши дела?",
+        "Добрый день! Как поживаете? 🌟"
+    ],
+    
+    thinking: [
+        "Дайте подумать... 🤔",
+        "Хм, интересный вопрос... 💭",
+        "Сейчас соображу... ⚡"
+    ],
+    
+    emotions: [
+        "Как здорово! 😄",
+        "Вот это да! 🤩",
+        "Очень интересно! 📚"
+    ],
+    
+    getRandomPhrase(category) {
+        const phrases = this[category];
+        return phrases[Math.floor(Math.random() * phrases.length)];
+    },
+    
+    addHumanTouch(text) {
+        if (Math.random() > 0.7 && text.length < 150) {
+            const emotion = this.getRandomPhrase('emotions');
+            text += " " + emotion;
+        }
+        return text;
+    }
+};
+
+// 🤖 КОМПОНЕНТ ПОМОЩНИКА
+function SmartAssistant({ isLoggedIn, userLocation }) {
+    const [isChatOpen, setIsChatOpen] = useState(false);
+    const [messages, setMessages] = useState([]);
+    const [inputMessage, setInputMessage] = useState('');
+
+    const knowledgeBase = {
+        "привет": "Привет! 👋 Я помощник семейного архива Голышевых. Чем могу помочь?",
+        "здравствуй": "Здравствуйте! 🕰️ Я ваш проводник в мир семейной истории Голышевых.",
+        
+        "кто ты": "Я - умный помощник семейного архива Голышевых 🤖",
+        "что ты": "Я цифровой помощник, созданный для обслуживания семейного архива 📚",
+        "как тебя зовут": "Я Архивариус! 🤖 Ваш проводник в истории семьи Голышевых",
+        
+        "кто твой создатель": "Меня создал Голышев Никита Викторович 👦\n• Родился: 18.02.2007\n• Создатель этого архива",
+        
+        "как пройти дальше": isLoggedIn 
+            ? "Вы уже в системе! 🎉 Можете изучать семейную информацию." 
+            : "Чтобы пройти дальше:\n1. Заполните форму идентификации\n2. Подтвердите родство\n3. Введите пароль доступа",
+            
+        "какой сегодня день": `Сегодня: ${new Date().toLocaleDateString('ru-RU', { 
+            weekday: 'long', 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric' 
+        })} 📅`,
+        
+        "который час": `Текущее время: ${new Date().toLocaleTimeString('ru-RU')} ⏰`,
+        
+        "где я": userLocation ? `📍 Вы находитесь в: ${userLocation.city}, ${userLocation.region}` : "📍 Определяю ваше местоположение...",
+        
+        "никита": isLoggedIn 
+            ? "👦 Голышев Никита Викторович\n• Родился: 18.02.2007\n• Место: Ленинск-Кузнецкий\n• Создатель архива" 
+            : "🔒 Информация доступна после входа",
+            
+        "любовь": isLoggedIn 
+            ? "👩 Голышева Любовь Анатольевна\n• Родилась: 13.09.1986\n• Дочь Елены Николаевны\n• Мать Никиты" 
+            : "🔒 Информация доступна после входа",
+            
+        "дом": isLoggedIn 
+            ? "🏠 Дом бабушки Елены:\n• Адрес: переулок Самарский 15\n• Деревянный дом с баней\n• Есть колодец и сад" 
+            : "🔒 Информация доступна после входа",
+        
+        "помощь": "Я могу:\n• Рассказать о семье Голышевых\n• Подсказать как войти в систему\n• Сообщить текущее время\n• Определить ваше местоположение",
+        
+        "пароль": "🔐 Пароль для доступа к архиву\nПодсказка: 'ответ в прошлом...'\nЭто важная дата в истории семьи",
+        
+        "спасибо": "Пожалуйста! 😊 Всегда рад помочь!",
+        "пока": "До свидания! 👋 Возвращайтесь для изучения семейной истории."
+    };
+
+    const getSmartResponse = (userMessage) => {
+        const message = userMessage.toLowerCase().trim();
+        
+        if (knowledgeBase[message]) {
+            return AssistantKnowledge.addHumanTouch(knowledgeBase[message]);
+        }
+
+        const keywordResponses = {
+            "как": "Для навигации используйте кнопки на экране. Спросите 'как пройти дальше' 🧭",
+            "что": "Я специализируюсь на семейной истории Голышевых. Спросите 'что ты умеешь' ❓",
+            "где": userLocation 
+                ? `Судя по данным, вы находитесь в ${userLocation.city} 🗺️` 
+                : "Определяю ваше местоположение... 📍",
+                
+            "родители": "👨‍👩‍👦 Родители - основа семьи. В архиве хранится информация о родителях всех членов семьи.",
+            "семья": isLoggedIn 
+                ? "Семья Голышевых имеет богатую историю 🌳 Спросите о конкретных членах семьи" 
+                : "🔒 Информация о семье доступна после подтверждения родства"
+        };
+
+        for (const [keyword, response] of Object.entries(keywordResponses)) {
+            if (message.includes(keyword)) {
+                return AssistantKnowledge.addHumanTouch(response);
+            }
+        }
+
+        return AssistantKnowledge.addHumanTouch(isLoggedIn 
+            ? "🤔 Интересный вопрос! Попробуйте спросить о членах семьи, доме или процессе идентификации." 
+            : "🔒 Для доступа к информации необходимо войти в архив. Спросите 'как пройти дальше'.");
+    };
+
+    const handleSendMessage = () => {
+        if (!inputMessage.trim()) return;
+        
+        addMessage("Вы", inputMessage);
+        const userMessage = inputMessage;
+        setInputMessage('');
+        
+        const thinkingMessage = addMessage("🕰️ Помощник", AssistantKnowledge.getRandomPhrase('thinking'), true);
+        
+        setTimeout(() => {
+            setMessages(prev => prev.filter(msg => msg.id !== thinkingMessage.id));
+            
+            const response = getSmartResponse(userMessage);
+            addMessage("🕰️ Помощник", response, true);
+        }, 800 + Math.random() * 700);
+    };
+
+    const addMessage = (sender, text, isAssistant = false) => {
+        const newMessage = { 
+            id: Date.now() + Math.random(), 
+            sender, 
+            text, 
+            isAssistant,
+            timestamp: new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
+        };
+        setMessages(prev => [...prev, newMessage]);
+        return newMessage;
+    };
+
+    useEffect(() => {
+        if (isChatOpen && messages.length === 0) {
+            setTimeout(() => {
+                const greeting = userLocation 
+                    ? `Привет из ${userLocation.city}! 🏠 Я ваш помощник в семейном архиве Голышевых ${isLoggedIn ? '👑' : '🔒'}` 
+                    : `Привет! 👋 Я ваш помощник в семейном архиве Голышевых ${isLoggedIn ? '👑' : '🔒'}`;
+                
+                addMessage("🕰️ Помощник", `${greeting}\n\nСпросите меня о семье, времени или местоположении!`, true);
+            }, 500);
+        }
+    }, [isChatOpen, userLocation]);
+
+    return (
+        <div id="assistant-container">
+            <div id="assistant-button" onClick={() => setIsChatOpen(true)}>
+                💬 {isLoggedIn ? 'Помощник+' : 'Помощник'}
+            </div>
+            
+            {isChatOpen && (
+                <div id="assistant-chat">
+                    <div id="chat-header">
+                        <span>🕰️ Помощник {isLoggedIn ? '👑' : '🔒'}</span>
+                        <button id="close-chat" onClick={() => setIsChatOpen(false)}>×</button>
+                    </div>
+                    
+                    <div id="chat-messages">
+                        {messages.map(message => (
+                            <div key={message.id} className={`message ${message.isAssistant ? 'assistant-message' : 'user-message'}`}>
+                                <div className="message-header">
+                                    <strong>{message.sender}</strong>
+                                    <span className="message-time">{message.timestamp}</span>
+                                </div>
+                                <div className="message-content">
+                                    {message.text.split('\n').map((line, i) => (
+                                        <div key={i}>{line}</div>
+                                    ))}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                    
+                    <div id="chat-input-container">
+                        <input 
+                            type="text"
+                            value={inputMessage}
+                            onChange={(e) => setInputMessage(e.target.value)}
+                            onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                            placeholder={isLoggedIn ? "Задайте вопрос о семье..." : "Спросите о системе..."}
+                        />
+                        <button onClick={handleSendMessage}>➤</button>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
+// 🎪 ОСНОВНОЙ КОМПОНЕНТ
 function FamilyArchive() {
+    const [showIntro, setShowIntro] = useState(true);
     const [currentScreen, setCurrentScreen] = useState('welcome');
     const [password, setPassword] = useState('');
     const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -392,32 +699,45 @@ function FamilyArchive() {
     const [timeMessage, setTimeMessage] = useState('');
     const [audioText, setAudioText] = useState('');
     const [showAudioText, setShowAudioText] = useState(false);
+    const [userLocation, setUserLocation] = useState(null);
+    const [locationMessage, setLocationMessage] = useState('');
 
     const CORRECT_PASSWORD = "18022007";
 
+    // ВСЕГДА показываем интро при загрузке
     useEffect(() => {
-        setTimeMessage(TimeSystem.getTimeMessage());
-        AudioSystem.init();
+        // Всегда показываем интро
+        setShowIntro(true);
         
-        const interval = setInterval(() => {
-            setTimeMessage(TimeSystem.getTimeMessage());
-        }, 60000);
-        
-        return () => clearInterval(interval);
+        LocationSystem.detectLocation().then(location => {
+            setUserLocation(location);
+            setLocationMessage(LocationSystem.getLocationMessage());
+        });
     }, []);
+
+    useEffect(() => {
+        if (!showIntro) {
+            setTimeMessage(TimeSystem.getTimeMessage());
+            AudioSystem.init();
+            
+            const interval = setInterval(() => {
+                setTimeMessage(TimeSystem.getTimeMessage());
+            }, 60000);
+            
+            return () => clearInterval(interval);
+        }
+    }, [showIntro]);
 
     // 🎵 Запуск аудио при загрузке welcome экрана
     useEffect(() => {
-        if (currentScreen === 'welcome') {
+        if (!showIntro && currentScreen === 'welcome') {
             const playAudio = () => {
                 AudioSystem.play(
-                    // onProgress - обновляем текст в реальном времени
                     (currentTime) => {
                         const text = AudioSystem.getCurrentText(currentTime);
                         setAudioText(text);
                         setShowAudioText(true);
                     },
-                    // onEnd - скрываем текст когда аудио закончилось
                     () => {
                         setTimeout(() => {
                             setShowAudioText(false);
@@ -426,11 +746,14 @@ function FamilyArchive() {
                     }
                 );
             };
-
-            // Запускаем аудио сразу
             playAudio();
         }
-    }, [currentScreen]);
+    }, [currentScreen, showIntro]);
+
+    const handleIntroComplete = () => {
+        // Убрана запись в localStorage - интро будет показываться всегда
+        setShowIntro(false);
+    };
 
     const proceedToAuth = () => {
         AudioSystem.stop();
@@ -491,54 +814,65 @@ function FamilyArchive() {
 
     return (
         <div className="react-app">
-            {/* 🎵 Баннер с текстом аудио */}
-            {showAudioText && (
-                <div className="audio-banner">
-                    <div className="audio-text">{audioText}</div>
-                    <div className="audio-pulse"></div>
-                </div>
-            )}
-
-            {!isLoggedIn ? (
-                <>
-                    {currentScreen === 'welcome' && (
-                        <WelcomeScreen onProceed={proceedToAuth} timeMessage={timeMessage} onReplayAudio={replayAudio} />
-                    )}
-                    {currentScreen === 'authentication' && (
-                        <AuthenticationScreen 
-                            onAuthenticate={handleAuthentication}
-                            error={error}
-                        />
-                    )}
-                    {currentScreen === 'login' && (
-                        <LoginScreen 
-                            password={password}
-                            setPassword={setPassword}
-                            error={error}
-                            onLogin={checkPassword}
-                            userData={userData}
-                            timeMessage={timeMessage}
-                        />
-                    )}
-                </>
+            {showIntro ? (
+                <IntroText onComplete={handleIntroComplete} />
             ) : (
-                <div className="container">
-                    <FamilyInfoScreen 
-                        userName={userName}
-                        userRelation={userRelation}
-                        userData={userData}
-                        onLogout={handleLogout}
-                        timeMessage={timeMessage}
-                    />
-                </div>
+                <>
+                    {/* 🎵 Баннер с текстом аудио */}
+                    {showAudioText && (
+                        <div className="audio-banner">
+                            <div className="audio-text">{audioText}</div>
+                            <div className="audio-pulse"></div>
+                        </div>
+                    )}
+
+                    {!isLoggedIn ? (
+                        <>
+                            {currentScreen === 'welcome' && (
+                                <WelcomeScreen 
+                                    onProceed={proceedToAuth} 
+                                    timeMessage={timeMessage}
+                                    locationMessage={locationMessage}
+                                    onReplayAudio={replayAudio} 
+                                />
+                            )}
+                            {currentScreen === 'authentication' && (
+                                <AuthenticationScreen 
+                                    onAuthenticate={handleAuthentication}
+                                    error={error}
+                                />
+                            )}
+                            {currentScreen === 'login' && (
+                                <LoginScreen 
+                                    password={password}
+                                    setPassword={setPassword}
+                                    error={error}
+                                    onLogin={checkPassword}
+                                    userData={userData}
+                                    timeMessage={timeMessage}
+                                />
+                            )}
+                        </>
+                    ) : (
+                        <div className="container">
+                            <FamilyInfoScreen 
+                                userName={userName}
+                                userRelation={userRelation}
+                                userData={userData}
+                                onLogout={handleLogout}
+                                timeMessage={timeMessage}
+                            />
+                        </div>
+                    )}
+                    <SmartAssistant isLoggedIn={isLoggedIn} userLocation={userLocation} />
+                </>
             )}
-            <SmartAssistant isLoggedIn={isLoggedIn} />
         </div>
     );
 }
 
-// 🎭 ЭКРАН ПРИВЕТСТВИЯ С АУДИО (из первого кода)
-function WelcomeScreen({ onProceed, timeMessage, onReplayAudio }) {
+// 🎭 ЭКРАН ПРИВЕТСТВИЯ
+function WelcomeScreen({ onProceed, timeMessage, locationMessage, onReplayAudio }) {
     return (
         <div className="welcome-container">
             <div className="welcome-overlay">
@@ -547,6 +881,7 @@ function WelcomeScreen({ onProceed, timeMessage, onReplayAudio }) {
                         <h1>🕰️ СЕМЕЙНЫЙ АРХИВ</h1>
                         <h2>ГОЛЫШЕВЫХ</h2>
                         <div className="time-message">{timeMessage}</div>
+                        <div className="location-message">{locationMessage}</div>
                     </div>
                     
                     <div className="welcome-message">
@@ -584,7 +919,7 @@ function WelcomeScreen({ onProceed, timeMessage, onReplayAudio }) {
     );
 }
 
-// 📝 КОМПОНЕНТ АУТЕНТИФИКАЦИИ (из первого кода)
+// 📝 КОМПОНЕНТ АУТЕНТИФИКАЦИИ
 function AuthenticationScreen({ onAuthenticate, error }) {
     const [formData, setFormData] = useState({
         lastName: '',
@@ -608,18 +943,8 @@ function AuthenticationScreen({ onAuthenticate, error }) {
     };
 
     const handleSubmit = () => {
-        if (!formData.firstName || formData.firstName.trim().length < 2) {
-            alert('❌ Пожалуйста, введите ваше имя');
-            return;
-        }
-
-        if (!formData.lastName || formData.lastName.trim().length < 2) {
-            alert('❌ Пожалуйста, введите вашу фамилию');
-            return;
-        }
-
-        if (!formData.birthDate || formData.birthDate.trim().length < 4) {
-            alert('❌ Пожалуйста, введите дату рождения');
+        if (!formData.firstName || !formData.lastName || !formData.birthDate) {
+            alert('❌ Пожалуйста, заполните все обязательные поля');
             return;
         }
 
@@ -634,11 +959,7 @@ function AuthenticationScreen({ onAuthenticate, error }) {
                     <p className="quote">«Кровные узы не разорвать, память предков не стереть»</p>
                 </div>
 
-                {error && (
-                    <div className="error-message">
-                        {error}
-                    </div>
-                )}
+                {error && <div className="error-message">{error}</div>}
 
                 <div className="authentication-form">
                     <div className="form-section">
@@ -732,7 +1053,7 @@ function AuthenticationScreen({ onAuthenticate, error }) {
     );
 }
 
-// 🔐 КОМПОНЕНТ ВХОДА (из первого кода)
+// 🔐 КОМПОНЕНТ ВХОДА
 function LoginScreen({ password, setPassword, error, onLogin, userData, timeMessage }) {
     const handleKeyPress = (e) => {
         if (e.key === 'Enter') onLogin();
@@ -749,9 +1070,7 @@ function LoginScreen({ password, setPassword, error, onLogin, userData, timeMess
                     {userData && (
                         <div className="success-box">
                             <strong>✅ Идентификация пройдена</strong><br/>
-                            <span>
-                                {userData.firstName} {userData.middleName || ''} - {userData.relation}
-                            </span>
+                            <span>{userData.firstName} {userData.middleName || ''}</span>
                         </div>
                     )}
                 </div>
@@ -771,21 +1090,15 @@ function LoginScreen({ password, setPassword, error, onLogin, userData, timeMess
                     placeholder="Введите пароль доступа"
                 />
                 
-                <button onClick={onLogin}>
-                    Войти в архив
-                </button>
+                <button onClick={onLogin}>Войти в архив</button>
                 
-                {error && (
-                    <div id="error" className="error">
-                        {error}
-                    </div>
-                )}
+                {error && <div id="error" className="error">{error}</div>}
             </div>
         </div>
     );
 }
 
-// 🏠 КОМПОНЕНТ ИНФОРМАЦИИ О СЕМЬЕ (из первого кода)
+// 🏠 КОМПОНЕНТ ИНФОРМАЦИИ О СЕМЬЕ
 function FamilyInfoScreen({ userName, userRelation, userData, onLogout, timeMessage }) {
     return (
         <div className="welcome-message">
@@ -799,9 +1112,7 @@ function FamilyInfoScreen({ userName, userRelation, userData, onLogout, timeMess
                         👤 {userData.firstName} {userData.middleName || ''} {userData.lastName || ''}
                     </div>
                 )}
-                <button onClick={onLogout} className="logout-btn">
-                    Выйти из архива
-                </button>
+                <button onClick={onLogout} className="logout-btn">Выйти из архива</button>
             </div>
             
             <div className="message-section">
@@ -827,90 +1138,6 @@ function FamilyInfoScreen({ userName, userRelation, userData, onLogout, timeMess
                 <h3>🏠 Дом бабушки</h3>
                 <p>Переулок Самарский 15 - деревянный дом с баней, колодцем и садом.</p>
             </div>
-        </div>
-    );
-}
-
-// 🤖 КОМПОНЕНТ ПОМОЩНИКА (из первого кода)
-function SmartAssistant({ isLoggedIn }) {
-    const [isChatOpen, setIsChatOpen] = useState(false);
-    const [messages, setMessages] = useState([]);
-    const [inputMessage, setInputMessage] = useState('');
-
-    const knowledgeBase = {
-        "привет": "Привет! 👋 Я помощник семейного архива Голышевых.",
-        "никита": isLoggedIn ? "👦 Голышев Никита Викторович\n• Родился: 18.02.2007\n• Создатель архива" : "🔒 Информация доступна после входа",
-        "любовь": isLoggedIn ? "👩 Голышева Любовь Анатольевна\n• Родилась: 13.09.1986\n• Мать Никиты" : "🔒 Информация доступна после входа",
-        "дом": isLoggedIn ? "🏠 Дом бабушки:\n• Адрес: переулок Самарский 15" : "🔒 Информация доступна после входа",
-        "помощь": "Я могу рассказать об архиве. После входа откроются дополнительные возможности."
-    };
-
-    const handleSendMessage = () => {
-        if (!inputMessage.trim()) return;
-        
-        addMessage("Вы", inputMessage);
-        const userMessage = inputMessage;
-        setInputMessage('');
-        
-        setTimeout(() => {
-            const response = knowledgeBase[userMessage.toLowerCase()] || 
-                (isLoggedIn ? 
-                    "🤔 Интересный вопрос! Пока моя база знаний ограничена семейной историей." :
-                    "🔒 Для доступа к информации необходимо войти в архив.");
-            addMessage("🕰️ Помощник", response, true);
-        }, 500);
-    };
-
-    const addMessage = (sender, text, isAssistant = false) => {
-        const newMessage = { 
-            id: Date.now() + Math.random(), 
-            sender, 
-            text, 
-            isAssistant 
-        };
-        setMessages(prev => [...prev, newMessage]);
-    };
-
-    return (
-        <div id="assistant-container">
-            <div id="assistant-button" onClick={() => setIsChatOpen(true)}>
-                💬 {isLoggedIn ? 'Помощник+' : 'Помощник'}
-            </div>
-            
-            {isChatOpen && (
-                <div id="assistant-chat">
-                    <div id="chat-header">
-                        <span>🕰️ {isLoggedIn ? 'Полный доступ' : 'Базовый доступ'}</span>
-                        <button id="close-chat" onClick={() => setIsChatOpen(false)}>
-                            ×
-                        </button>
-                    </div>
-                    
-                    <div id="chat-messages">
-                        {messages.map(message => (
-                            <div key={message.id} className={`message ${message.isAssistant ? 'assistant-message' : 'user-message'}`}>
-                                <strong>{message.sender}:</strong> 
-                                <div style={{marginTop: '5px'}}>
-                                    {message.text.split('\n').map((line, i) => (
-                                        <div key={i}>{line}</div>
-                                    ))}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                    
-                    <div id="chat-input-container">
-                        <input 
-                            type="text"
-                            value={inputMessage}
-                            onChange={(e) => setInputMessage(e.target.value)}
-                            onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                            placeholder={isLoggedIn ? "Задайте вопрос о семье..." : "Базовые вопросы..."}
-                        />
-                        <button onClick={handleSendMessage}>➤</button>
-                    </div>
-                </div>
-            )}
         </div>
     );
 }
