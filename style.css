@@ -674,3 +674,126 @@ button:hover {
     border-bottom: 1px solid #ecf0f1;
     padding-bottom: 5px;
 }
+/* Стили для аудио системы */
+.audio-banner {
+    position: fixed;
+    top: 20%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(44, 62, 80, 0.95);
+    color: white;
+    padding: 20px 30px;
+    border-radius: 15px;
+    z-index: 10000;
+    text-align: center;
+    min-width: 300px;
+    border: 2px solid #3498db;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+    animation: fadeIn 0.5s ease-in;
+}
+
+.audio-text {
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.audio-pulse {
+    width: 8px;
+    height: 8px;
+    background: #e74c3c;
+    border-radius: 50%;
+    margin: 0 auto;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(0.8); opacity: 1; }
+    50% { transform: scale(1.2); opacity: 0.7; }
+    100% { transform: scale(0.8); opacity: 1; }
+}
+
+/* Стили для welcome экрана */
+.welcome-container {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.welcome-overlay {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 20px;
+    padding: 40px;
+    max-width: 600px;
+    width: 100%;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+    border: 3px solid #2c3e50;
+}
+
+.welcome-content h1 {
+    color: #2c3e50;
+    text-align: center;
+    margin-bottom: 5px;
+    font-size: 2.5em;
+}
+
+.welcome-content h2 {
+    color: #3498db;
+    text-align: center;
+    margin-bottom: 20px;
+    font-size: 1.8em;
+}
+
+.welcome-actions {
+    text-align: center;
+    margin: 30px 0;
+}
+
+.main-action {
+    background: linear-gradient(135deg, #e74c3c, #c0392b) !important;
+    font-size: 18px !important;
+    padding: 15px 30px !important;
+}
+
+.replay-btn {
+    background: #95a5a6 !important;
+    margin-top: 10px;
+    width: auto;
+    padding: 10px 20px;
+}
+
+.welcome-footer {
+    text-align: center;
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #ecf0f1;
+    color: #7f8c8d;
+    font-style: italic;
+}
+
+/* Анимации */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translate(-50%, -20px); }
+    to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .audio-banner {
+        top: 10%;
+        min-width: 250px;
+        padding: 15px 20px;
+    }
+    
+    .audio-text {
+        font-size: 16px;
+    }
+    
+    .welcome-overlay {
+        padding: 20px;
+        margin: 10px;
+    }
+}
